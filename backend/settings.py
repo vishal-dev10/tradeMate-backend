@@ -14,6 +14,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 load_dotenv()
 
 FLATTRADE_CLIENT_ID = os.getenv('FLATTRADE_CLIENT_ID')
@@ -21,8 +24,7 @@ FLATTRADE_CLIENT_SECRET = os.getenv('FLATTRADE_CLIENT_SECRET')
 FLATTRADE_BASE_URL = os.getenv('FLATTRADE_BASE_URL')
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production
