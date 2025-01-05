@@ -36,7 +36,7 @@ SECRET_KEY = 'django-insecure-dcg3ztw^@szc@0x-64x6ri(fp+-9e54l))k2t8p-%s0i^+t4-h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['trademate-backend.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
