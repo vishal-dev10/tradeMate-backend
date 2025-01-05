@@ -8,7 +8,39 @@ import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
+@csrf_exempt
+def flattrade_postback(request):
+    if request.method == 'POST':
+        # Handle the postback data here
+        data = request.POST
+        # Process the data as needed
+        return JsonResponse({'status': 'success'})
+    
+@csrf_exempt
+def flattrade_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        response = requests.post(
+            f"{settings.FLATTRADE_BASE_URL}/login",
+            data={'username': username, 'password': password}
+        )
+        return JsonResponse(response.json())
+
+@csrf_exempt
+def fetch_tradebook(request):
+    if request.method == 'POST':
+        token = request.POST.get('token')
+        response = requests.get(
+            f"{settings.FLATTRADE_BASE_URL}/tradebook",
+            headers={'Authorization': f'Bearer {token}'}
+        )
+        return JsonResponse(response.json())
+    
 class FlattradeAuth(APIView):
     def get(self, request):
         """Authenticate and get an access token from Flattrade"""
