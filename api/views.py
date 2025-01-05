@@ -1,114 +1,48 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Item
-from .serializers import ItemSerializer
-import os
+import hashlib
 import requests
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-import hashlib
-import logging
+from rest_framework.decorators import api_view
+from rest_framework.parsers import JSONParser
 
-logger = logging.getLogger(__name__)
+FLATTR_API_URL = "https://authapi.flattrade.in/trade/apitoken"
+API_KEY = "f1f4f51b37a3427689cbb4bfbb21785e"
+API_SECRET_KEY = "2025.4619d58cebde4fd593b4dbe859b47d5b5f62d3ba8c13bd94"
+
+def generate_api_secret(api_key, request_code, api_secret_key):
+    raw_data = api_key + request_code + api_secret_key
+    return hashlib.sha256(raw_data.encode()).hexdigest()
+
+@api_view(["POST"])
+def get_token(request):
+    request_code = request.data.get("request_code")
+    client = request.data.get("client")  # Optional for logging
+
+    if not request_code:
+        return JsonResponse({"error": "Request code is required"}, status=400)
+
+    api_secret = generate_api_secret(API_KEY, request_code, API_SECRET_KEY)
+
+    payload = {
+        "api_key": API_KEY,
+        "request_code": request_code,
+        "api_secret": api_secret,
+    }
+
+    response = requests.post(FLATTR_API_URL, json=payload)
+    if response.status_code == 200:
+        return JsonResponse(response.json())
+    else:
+        return JsonResponse({"error": "Failed to fetch token"}, status=response.status_code)
 
 @csrf_exempt
+@api_view(["POST"])
 def flattrade_postback(request):
-    if request.method == 'POST':
-        # Handle the postback data here
-        data = request.POST
-        # Process the data as needed
-        return JsonResponse({'status': 'success'})
-    
-@csrf_exempt
-def flattrade_login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        pan_or_dob = request.POST.get('panOrDob')
-        response = requests.post(
-            f"{settings.FLATTRADE_BASE_URL}/login",
-            data={'username': username, 'password': password, 'panOrDob': pan_or_dob}
-        )
-        try:
-            response_data = response.json()
-        except ValueError:
-            logger.error(f"Failed to decode JSON response: {response.text}")
-            return JsonResponse({'error': 'Invalid response from Flattrade'}, status=status.HTTP_502_BAD_GATEWAY)
-        return JsonResponse(response_data)
-
-@csrf_exempt
-def generate_access_token(request):
-    if request.method == 'POST':
-        request_code = request.POST.get('request_code')
-        api_key = settings.FLATTRADE_API_KEY
-        api_secret = settings.FLATTRADE_SECRET_KEY
-        hash_value = hashlib.sha256(f"{api_key}{request_code}{api_secret}".encode()).hexdigest()
-        response = requests.post(
-            f"{settings.FLATTRADE_BASE_URL}/trade/apitoken",
-            data={'api_key': api_key, 'request_code': request_code, 'api_secret': hash_value}
-        )
-        try:
-            response_data = response.json()
-        except ValueError:
-            logger.error(f"Failed to decode JSON response: {response.text}")
-            return JsonResponse({'error': 'Invalid response from Flattrade'}, status=status.HTTP_502_BAD_GATEWAY)
-        return JsonResponse(response_data)
-
-@csrf_exempt
-def fetch_tradebook(request):
-    if request.method == 'POST':
-        token = request.POST.get('token')
-        response = requests.get(
-            f"{settings.FLATTRADE_BASE_URL}/tradebook",
-            headers={'Authorization': f'Bearer {token}'}
-        )
-        try:
-            response_data = response.json()
-        except ValueError:
-            logger.error(f"Failed to decode JSON response: {response.text}")
-            return JsonResponse({'error': 'Invalid response from Flattrade'}, status=status.HTTP_502_BAD_GATEWAY)
-        return JsonResponse(response_data)
-    
-class FlattradeAuth(APIView):
-    def get(self, request):
-        """Authenticate and get an access token from Flattrade"""
-        url = f"{os.getenv('FLATTRADE_BASE_URL')}/auth/token"
-        payload = {
-            "client_id": os.getenv("FLATTRADE_CLIENT_ID"),
-            "client_secret": os.getenv("FLATTRADE_CLIENT_SECRET"),
-            "grant_type": "client_credentials",
-        }
-        response = requests.post(url, data=payload)
-        if response.status_code == 200:
-            return Response(response.json())
-        return Response({"error": "Failed to authenticate"}, status=response.status_code)
-    
-class FetchHoldings(APIView):
-    def get(self, request):
-        """Fetch user holdings from Flattrade"""
-        token = request.headers.get("Authorization")
-        if not token:
-            return Response({"error": "Access token required"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        url = f"{os.getenv('FLATTRADE_BASE_URL')}/holdings"
-        response = requests.get(url, headers={"Authorization": f"Bearer {token}"})
-        if response.status_code == 200:
-            return Response(response.json())
-        return Response({"error": "Failed to fetch holdings"}, status=response.status_code)
-
-
-
-class ItemList(APIView):
-    def get(self, request):
-        items = Item.objects.all()
-        serializer = ItemSerializer(items, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        serializer = ItemSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        data = JSONParser().parse(request)  # Parse the JSON payload
+        # Example: Log the received event
+        print(f"Received postback data: {data}")
+        # Process the event (e.g., update database, notify user)
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
