@@ -9,6 +9,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def flattrade_postback(request):
@@ -28,7 +31,12 @@ def flattrade_login(request):
             f"{settings.FLATTRADE_BASE_URL}/login",
             data={'username': username, 'password': password, 'panOrDob': pan_or_dob}
         )
-        return JsonResponse(response.json())
+        try:
+            response_data = response.json()
+        except ValueError:
+            logger.error(f"Failed to decode JSON response: {response.text}")
+            return JsonResponse({'error': 'Invalid response from Flattrade'}, status=status.HTTP_502_BAD_GATEWAY)
+        return JsonResponse(response_data)
 
 @csrf_exempt
 def generate_access_token(request):
@@ -41,7 +49,12 @@ def generate_access_token(request):
             f"{settings.FLATTRADE_BASE_URL}/trade/apitoken",
             data={'api_key': api_key, 'request_code': request_code, 'api_secret': hash_value}
         )
-        return JsonResponse(response.json())
+        try:
+            response_data = response.json()
+        except ValueError:
+            logger.error(f"Failed to decode JSON response: {response.text}")
+            return JsonResponse({'error': 'Invalid response from Flattrade'}, status=status.HTTP_502_BAD_GATEWAY)
+        return JsonResponse(response_data)
 
 @csrf_exempt
 def fetch_tradebook(request):
@@ -51,7 +64,12 @@ def fetch_tradebook(request):
             f"{settings.FLATTRADE_BASE_URL}/tradebook",
             headers={'Authorization': f'Bearer {token}'}
         )
-        return JsonResponse(response.json())
+        try:
+            response_data = response.json()
+        except ValueError:
+            logger.error(f"Failed to decode JSON response: {response.text}")
+            return JsonResponse({'error': 'Invalid response from Flattrade'}, status=status.HTTP_502_BAD_GATEWAY)
+        return JsonResponse(response_data)
     
 class FlattradeAuth(APIView):
     def get(self, request):
