@@ -20,7 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
-    path('flattrade/login/', include('flattrade_login.urls')),
-    path('flattrade/token/', include('flattrade_token.urls')),
 ]
 
