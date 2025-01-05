@@ -5,12 +5,10 @@ from .models import Item
 from .serializers import ItemSerializer
 import os
 import requests
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+import hashlib
 
 @csrf_exempt
 def flattrade_postback(request):
@@ -25,9 +23,23 @@ def flattrade_login(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        pan_or_dob = request.POST.get('panOrDob')
         response = requests.post(
             f"{settings.FLATTRADE_BASE_URL}/login",
-            data={'username': username, 'password': password}
+            data={'username': username, 'password': password, 'panOrDob': pan_or_dob}
+        )
+        return JsonResponse(response.json())
+
+@csrf_exempt
+def generate_access_token(request):
+    if request.method == 'POST':
+        request_code = request.POST.get('request_code')
+        api_key = settings.FLATTRADE_API_KEY
+        api_secret = settings.FLATTRADE_SECRET_KEY
+        hash_value = hashlib.sha256(f"{api_key}{request_code}{api_secret}".encode()).hexdigest()
+        response = requests.post(
+            f"{settings.FLATTRADE_BASE_URL}/trade/apitoken",
+            data={'api_key': api_key, 'request_code': request_code, 'api_secret': hash_value}
         )
         return JsonResponse(response.json())
 

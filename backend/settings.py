@@ -22,6 +22,9 @@ load_dotenv()
 FLATTRADE_CLIENT_ID = os.getenv('FLATTRADE_CLIENT_ID')
 FLATTRADE_CLIENT_SECRET = os.getenv('FLATTRADE_CLIENT_SECRET')
 FLATTRADE_BASE_URL = os.getenv('FLATTRADE_BASE_URL', 'https://piconnect.flattrade.in/PiConnectTP')
+FLATTRADE_API_KEY = os.getenv('FLATTRADE_API_KEY')
+FLATTRADE_SECRET_KEY = os.getenv('FLATTRADE_SECRET_KEY')
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
